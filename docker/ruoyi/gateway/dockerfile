@@ -1,0 +1,15 @@
+# 基础镜像
+FROM  openjdk:8-jre
+# author
+MAINTAINER ddmit
+
+# 挂载目录
+VOLUME /home/ddmit
+# 创建目录
+RUN mkdir -p /home/ddmit
+# 指定路径
+WORKDIR /home/ddmit
+# 复制jar文件到路径
+COPY ./jar/ddmit-gateway.jar /home/ddmit/ddmit-gateway.jar
+# 启动网关服务
+ENTRYPOINT ["java","-jar","ddmit-gateway.jar"]

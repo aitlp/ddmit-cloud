@@ -1,0 +1,140 @@
+version : '3.8'
+services:
+  ddmit-nacos:
+    container_name: ddmit-nacos
+    image: nacos/nacos-server
+    build:
+      context: ./nacos
+    environment:
+      - MODE=standalone
+    volumes:
+      - ./nacos/logs/:/home/nacos/logs
+      - ./nacos/conf/application.properties:/home/nacos/conf/application.properties
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+      - "9849:9849"
+    depends_on:
+      - ddmit-mysql
+  ddmit-mysql:
+    container_name: ddmit-mysql
+    image: mysql:5.7
+    build:
+      context: ./mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql/conf:/etc/mysql/conf.d
+      - ./mysql/logs:/logs
+      - ./mysql/data:/var/lib/mysql
+    command: [
+          'mysqld',
+          '--innodb-buffer-pool-size=80M',
+          '--character-set-server=utf8mb4',
+          '--collation-server=utf8mb4_unicode_ci',
+          '--default-time-zone=+8:00',
+          '--lower-case-table-names=1'
+        ]
+    environment:
+      MYSQL_DATABASE: 'ry-cloud'
+      MYSQL_ROOT_PASSWORD: password
+  ddmit-redis:
+    container_name: ddmit-redis
+    image: redis
+    build:
+      context: ./redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/conf/redis.conf:/home/ddmit/redis/redis.conf
+      - ./redis/data:/data
+    command: redis-server /home/ddmit/redis/redis.conf
+  ddmit-nginx:
+    container_name: ddmit-nginx
+    image: nginx
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/html/dist:/home/ddmit/projects/ddmit-ui
+      - ./nginx/conf/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - ddmit-gateway
+    links:
+      - ddmit-gateway
+  ddmit-gateway:
+    container_name: ddmit-gateway
+    build:
+      context: ./ddmit/gateway
+      dockerfile: dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ddmit-redis
+    links:
+      - ddmit-redis
+  ddmit-auth:
+    container_name: ddmit-auth
+    build:
+      context: ./ddmit/auth
+      dockerfile: dockerfile
+    ports:
+      - "9200:9200"
+    depends_on:
+      - ddmit-redis
+    links:
+      - ddmit-redis
+  ddmit-modules-system:
+    container_name: ddmit-modules-system
+    build:
+      context: ./ddmit/modules/system
+      dockerfile: dockerfile
+    ports:
+      - "9201:9201"
+    depends_on:
+      - ddmit-redis
+      - ddmit-mysql
+    links:
+      - ddmit-redis
+      - ddmit-mysql
+  ddmit-modules-gen:
+    container_name: ddmit-modules-gen
+    build:
+      context: ./ddmit/modules/gen
+      dockerfile: dockerfile
+    ports:
+      - "9202:9202"
+    depends_on:
+      - ddmit-mysql
+    links:
+      - ddmit-mysql
+  ddmit-modules-job:
+    container_name: ddmit-modules-job
+    build:
+      context: ./ddmit/modules/job
+      dockerfile: dockerfile
+    ports:
+      - "9203:9203"
+    depends_on:
+      - ddmit-mysql
+    links:
+      - ddmit-mysql
+  ddmit-modules-file:
+    container_name: ddmit-modules-file
+    build:
+      context: ./ddmit/modules/file
+      dockerfile: dockerfile
+    ports:
+      - "9300:9300"
+    volumes:
+    - ./ddmit/uploadPath:/home/ddmit/uploadPath
+  ddmit-visual-monitor:
+    container_name: ddmit-visual-monitor
+    build:
+      context: ./ddmit/visual/monitor
+      dockerfile: dockerfile
+    ports:
+      - "9100:9100"

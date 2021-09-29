@@ -1,0 +1,5 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  com.ddmit.common.security.service.TokenService,\
+  com.ddmit.common.security.aspect.PreAuthorizeAspect,\
+  com.ddmit.common.security.aspect.InnerAuthAspect,\
+  com.ddmit.common.security.handler.GlobalExceptionHandler
